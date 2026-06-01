@@ -86,10 +86,25 @@ function normalizeModerationStatus(status: string | null | undefined): 'pending'
   return 'pending';
 }
 
-function mapMemberReview(row: any, includePrivate = false) {
+type MemberReviewDto = {
+  id: string;
+  rating: number;
+  comment: string;
+  displayRole: string | null;
+  avatarUrl: string | null;
+  moderationStatus: 'pending' | 'approved' | 'rejected';
+  createdAt: Date;
+  updatedAt: Date;
+  showOnWebsite?: boolean;
+  memberName?: string;
+  memberEmail?: string;
+  userId?: string;
+};
+
+function mapMemberReview(row: any, includePrivate = false): MemberReviewDto {
   const moderationStatus = normalizeModerationStatus(row.moderationStatus);
 
-  const base = {
+  const base: MemberReviewDto = {
     id: row.id,
     rating: row.rating,
     comment: row.comment,
@@ -99,7 +114,9 @@ function mapMemberReview(row: any, includePrivate = false) {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
+
   if (!includePrivate) return base;
+
   return {
     ...base,
     showOnWebsite: Boolean(row.showOnWebsite),

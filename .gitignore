@@ -1,5 +1,6 @@
-# Logs
-logs
+# Runtime log output (do not ignore backend/src/logs/ — application logger source)
+/logs/
+backend/logs/
 *.log
 npm-debug.log*
 yarn-debug.log*

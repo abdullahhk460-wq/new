@@ -1,0 +1,78 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model AdminUser {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String         @unique
+  passwordHash String         @map("password_hash")
+  role         String         @default("manager") // 'super_admin' or 'manager'
+  resetToken          String?        @map("reset_token")
+  resetExpires        DateTime?      @map("reset_expires") @db.Timestamptz
+  lastLogin           DateTime?      @map("last_login") @db.Timestamptz
+  failedLoginAttempts Int            @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime?      @map("locked_until") @db.Timestamptz
+  createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  refreshTokens RefreshToken[]
+  auditLogs    AuditLog[]
+
+  @@map("admin_users")
+}
+
+model Booking {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  email     String
+  phone     String
+  plan      String?
+  classType String?  @map("class_type")
+  timeSlot  String?  @map("time_slot")
+  comments  String?
+  status    String   @default("pending")
+  cost      Int?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("bookings")
+}
+
+model ContactInquiry {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  email     String
+  subject   String?
+  message   String
+  honeypot  String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("contact_inquiries")
+}
+
+model RefreshToken {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adminId   String    @map("admin_id") @db.Uuid
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz
+  revoked   Boolean   @default(false)
+  createdAt DateTime  @map("created_at") @db.Timestamptz
+
+  @@map("refresh_tokens")
+}
+
+model AuditLog {
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adminId   String?    @map("admin_id") @db.Uuid
+  admin     AdminUser? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  action    String
+  targetId  String?    @map("target_id") @db.Uuid
+  ipAddress String?    @map("ip_address")
+  metadata  Json       @default("{}")
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("audit_logs")
+}

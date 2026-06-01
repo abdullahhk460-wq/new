@@ -1,0 +1,134 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model AdminUser {
+  id                  String         @id @default(uuid())
+  email               String         @unique
+  passwordHash        String         @map("password_hash")
+  role                String         @default("manager") // 'super_admin' or 'manager'
+  resetToken          String?        @map("reset_token")
+  resetExpires        DateTime?      @map("reset_expires")
+  lastLogin           DateTime?      @map("last_login")
+  failedLoginAttempts Int            @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime?      @map("locked_until")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  refreshTokens       RefreshToken[]
+  auditLogs           AuditLog[]
+
+  @@map("admin_users")
+}
+
+model Booking {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  phone     String
+  plan      String?
+  classType String?  @map("class_type")
+  timeSlot  String?  @map("time_slot")
+  comments  String?
+  status    String   @default("pending")
+  cost      Int?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("bookings")
+}
+
+model ContactInquiry {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  honeypot  String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("contact_inquiries")
+}
+
+model User {
+  id            String          @id @default(uuid())
+  email         String          @unique
+  name          String
+  passwordHash  String          @map("password_hash")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  refreshTokens RefreshToken[]
+  biometrics    UserBiometrics?
+  reviews       MemberReview[]
+
+  @@map("users")
+}
+
+model UserBiometrics {
+  userId       String   @id @map("user_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weight       Float?
+  height       Float?
+  bodyFat      Float?   @map("body_fat")
+  muscleMass   Float?   @map("muscle_mass")
+  targetWeight Float?   @map("target_weight")
+  logs         String   @default("[]")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("user_biometrics")
+}
+
+model MemberReview {
+  id                 String   @id @default(uuid())
+  userId             String   @map("user_id")
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source             String   @default("member")
+  trainerName        String?  @map("trainer_name")
+  rating             Int      @default(5)
+  comment            String
+  displayRole        String?  @map("display_role")
+  avatarUrl          String?  @map("avatar_url")
+  showOnWebsite      Boolean  @default(false) @map("show_on_website")
+  moderationStatus   String   @default("pending") @map("moderation_status")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("member_reviews")
+}
+
+model RefreshToken {
+  id        String     @id @default(uuid())
+  adminId   String?    @map("admin_id")
+  admin     AdminUser? @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  userId    String?    @map("user_id")
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String     @map("token_hash")
+  expiresAt DateTime   @map("expires_at")
+  revoked   Boolean    @default(false)
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  @@map("refresh_tokens")
+}
+
+model SiteSetting {
+  id                     String   @id @default("main")
+  whatsappNumber         String   @default("923169636282") @map("whatsapp_number")
+  whatsappPrefillMessage String   @default("Assalam-o-Alaikum, I want to book an elite trial workout pass at The Den Gym!") @map("whatsapp_prefill_message")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@map("site_settings")
+}
+
+model AuditLog {
+  id        String     @id @default(uuid())
+  adminId   String?    @map("admin_id")
+  admin     AdminUser? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  action    String
+  targetId  String?    @map("target_id")
+  ipAddress String?    @map("ip_address")
+  metadata  String     @default("{}") // SQLite maps metadata as string to simplify JSON handling
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}

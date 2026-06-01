@@ -1,0 +1,30 @@
+import { PrismaClient } from '@prisma/client';
+import { logger } from '../logs/logger.js';
+
+export const prisma = new PrismaClient({
+  log: [
+    { emit: 'event', level: 'query' },
+    { emit: 'event', level: 'error' },
+    { emit: 'event', level: 'info' },
+    { emit: 'event', level: 'warn' },
+  ],
+});
+
+// Bind Prisma events to Winston Logger
+prisma.$on('query', (e) => {
+  logger.debug(`Query: ${e.query} | Params: ${e.params} | Duration: ${e.duration}ms`);
+});
+
+prisma.$on('error', (e) => {
+  logger.error(`Prisma Error: ${e.message}`, { target: e.target });
+});
+
+prisma.$on('warn', (e) => {
+  logger.warn(`Prisma Warning: ${e.message}`);
+});
+
+prisma.$on('info', (e) => {
+  logger.info(`Prisma Info: ${e.message}`);
+});
+
+export default prisma;
